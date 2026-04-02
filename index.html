@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#e94560">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <title>Interval Runner</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #1a1a2e;
+      --surface: #16213e;
+      --surface2: #0f3460;
+      --accent: #e94560;
+      --accent2: #ff6b6b;
+      --text: #eee;
+      --text2: #aaa;
+      --radius: 12px;
+      --gap: 12px;
+    }
+    html, body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+    }
+    button {
+      font-family: inherit;
+      font-size: 16px;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      padding: 12px 20px;
+      min-height: 48px;
+      min-width: 48px;
+      touch-action: manipulation;
+    }
+    input, select {
+      font-family: inherit;
+      font-size: 16px;
+      border: 1px solid var(--surface2);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text);
+      padding: 10px 12px;
+      min-height: 44px;
+    }
+    input:focus, select:focus {
+      outline: 2px solid var(--accent);
+      outline-offset: -1px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--surface2);
+      gap: 12px;
+    }
+    .header h1 { font-size: 20px; flex: 1; }
+    .back-btn {
+      background: none;
+      color: var(--accent);
+      padding: 8px;
+      font-size: 24px;
+      min-width: 40px;
+    }
+
+    /* Screen management */
+    .screen { display: none; min-height: calc(100vh - 56px); }
+    .screen.active { display: block; }
+
+    /* Home screen */
+    .workout-list { padding: 16px; }
+    .workout-item {
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: var(--gap);
+      cursor: pointer;
+      gap: 12px;
+    }
+    .workout-item:active { background: var(--surface2); }
+    .workout-item .name { flex: 1; font-size: 18px; }
+    .workout-item .delete-btn {
+      background: none;
+      color: var(--accent);
+      padding: 8px;
+      font-size: 20px;
+      min-width: 40px;
+    }
+    .new-workout-btn {
+      background: var(--accent);
+      color: white;
+      width: 100%;
+      font-size: 18px;
+      font-weight: 600;
+      padding: 16px;
+    }
+    .empty-state {
+      text-align: center;
+      color: var(--text2);
+      padding: 48px 16px;
+      font-size: 18px;
+    }
+
+    /* Editor */
+    .editor-content { padding: 16px; padding-bottom: 100px; }
+    .name-input {
+      width: 100%;
+      font-size: 20px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      background: var(--bg);
+    }
+    .block-tree { list-style: none; }
+    .block-tree .block-tree { margin-left: 24px; padding-left: 12px; border-left: 2px solid var(--surface2); }
+    .block-item { margin-bottom: 8px; }
+    .block-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 12px;
+    }
+    .block-card.group-card {
+      background: var(--surface2);
+      border: 1px solid rgba(233, 69, 96, 0.3);
+    }
+    .block-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .block-row input[type="text"] { flex: 1; min-width: 100px; }
+    .block-row input[type="number"] { width: 70px; }
+    .block-row label { color: var(--text2); font-size: 13px; white-space: nowrap; }
+    .block-actions {
+      display: flex;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .block-actions button {
+      background: var(--bg);
+      color: var(--text2);
+      padding: 6px 10px;
+      font-size: 13px;
+      min-height: 36px;
+    }
+    .block-actions button:active { color: var(--text); }
+    .block-actions .del-btn { color: var(--accent); }
+    .group-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--accent2);
+    }
+    .group-header span { flex: 1; }
+    .group-label { cursor: pointer; border-bottom: 1px dashed var(--accent2); }
+
+    /* Drag & drop */
+    .block-item.dragging { opacity: 0.4; }
+    .block-item.drag-over > .block-card { outline: 2px dashed var(--accent); }
+    .drag-handle {
+      cursor: grab;
+      color: var(--text2);
+      font-size: 18px;
+      padding: 4px;
+      user-select: none;
+      touch-action: none;
+    }
+
+    /* Editor bottom bar */
+    .editor-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--surface2);
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+    }
+    .editor-bar button { flex: 1; font-weight: 600; }
+    .save-btn { background: var(--surface2); color: var(--text); }
+    .run-btn { background: var(--accent); color: white; }
+
+    /* Execution screen */
+    .exec-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      min-height: calc(100vh - 56px);
+      text-align: center;
+    }
+    .exec-timer {
+      font-size: 96px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -2px;
+      margin: 16px 0;
+    }
+    .exec-block-text {
+      font-size: 24px;
+      color: var(--text2);
+      margin-bottom: 8px;
+      max-width: 100%;
+      word-break: break-word;
+    }
+    .exec-position {
+      font-size: 16px;
+      color: var(--text2);
+      margin-bottom: 24px;
+    }
+    .exec-progress {
+      width: 100%;
+      max-width: 400px;
+      height: 8px;
+      background: var(--surface);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+    .exec-progress-bar {
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.3s;
+    }
+    .exec-remaining {
+      font-size: 14px;
+      color: var(--text2);
+      margin-bottom: 32px;
+    }
+    .exec-controls {
+      display: flex;
+      gap: 16px;
+    }
+    .exec-controls button {
+      padding: 16px 32px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .pause-btn { background: var(--surface2); color: var(--text); }
+    .stop-btn { background: var(--accent); color: white; }
+    .exec-done {
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--accent2);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Home Screen -->
+<div id="home-screen" class="screen active">
+  <div class="header">
+    <h1>Interval Runner</h1>
+  </div>
+  <div class="workout-list" id="workout-list"></div>
+</div>
+
+<!-- Editor Screen -->
+<div id="editor-screen" class="screen">
+  <div class="header">
+    <button class="back-btn" id="editor-back">&larr;</button>
+    <h1>Edit Workout</h1>
+  </div>
+  <div class="editor-content">
+    <input type="text" class="name-input" id="workout-name" placeholder="Workout name">
+    <ul class="block-tree" id="block-tree"></ul>
+  </div>
+  <div class="editor-bar">
+    <button class="save-btn" id="save-btn">Save</button>
+    <button class="run-btn" id="run-btn">Run</button>
+  </div>
+</div>
+
+<!-- Execution Screen -->
+<div id="exec-screen" class="screen">
+  <div class="header">
+    <h1 id="exec-title">Running</h1>
+  </div>
+  <div class="exec-content">
+    <div class="exec-block-text" id="exec-text"></div>
+    <div class="exec-timer" id="exec-timer">0:00</div>
+    <div class="exec-position" id="exec-position"></div>
+    <div class="exec-progress"><div class="exec-progress-bar" id="exec-progress"></div></div>
+    <div class="exec-remaining" id="exec-remaining"></div>
+    <div class="exec-controls" id="exec-controls">
+      <button class="pause-btn" id="pause-btn">Pause</button>
+      <button class="stop-btn" id="stop-btn">Stop</button>
+    </div>
+  </div>
+</div>
+
+<!-- Silent audio for background execution -->
+<audio id="silent-audio" loop>
+  <source src="data:audio/wav;base64,UklGRuwAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YcgAAAABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAAEAAQABAA==" type="audio/wav">
+</audio>
+
+<script src="app.js"></script>
+</body>
+</html>
