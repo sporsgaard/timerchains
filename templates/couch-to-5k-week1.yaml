@@ -9,7 +9,7 @@ blocks:
   repeat: 1
   blocks:
     - type: leaf
-      text: "Warm up ... brisk walk"
+      text: "Warm up *** brisk walk"
       duration: 300
       repeat: 1
     - type: group
@@ -25,6 +25,6 @@ blocks:
           duration: 90
           repeat: 1
     - type: leaf
-      text: "Cool down ... easy walk"
+      text: "Cool down *** easy walk"
       duration: 300
       repeat: 1

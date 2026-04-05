@@ -10,7 +10,7 @@ blocks:
   repeat: 1
   blocks:
     - type: leaf
-      text: "Warm up ... easy jog"
+      text: "Warm up *** easy jog"
       duration: 300
       repeat: 1
     - type: group
@@ -34,10 +34,10 @@ blocks:
               duration: 10
               repeat: 1
         - type: leaf
-          text: "Rest ... walk or light jog"
+          text: "Rest *** walk or light jog"
           duration: 120
           repeat: 1
     - type: leaf
-      text: "Cool down ... easy jog"
+      text: "Cool down *** easy jog"
       duration: 300
       repeat: 1

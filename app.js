@@ -15,6 +15,8 @@
   const homeScreen = $('home-screen');
   const editorScreen = $('editor-screen');
   const execScreen = $('exec-screen');
+  const homeHelpScreen = $('home-help-screen');
+  const editorHelpScreen = $('editor-help-screen');
   const workoutListEl = $('workout-list');
   const workoutNameEl = $('workout-name');
   const blockTreeEl = $('block-tree');
@@ -139,7 +141,7 @@
 
   // --- Screen Navigation ---
   function showScreen(screen) {
-    [homeScreen, editorScreen, execScreen].forEach(s => s.classList.remove('active'));
+    [homeScreen, editorScreen, execScreen, homeHelpScreen, editorHelpScreen].forEach(s => s.classList.remove('active'));
     screen.classList.add('active');
   }
 
@@ -463,29 +465,78 @@
     });
   }
 
+  function playRisingTone() {
+    return new Promise(resolve => {
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(880, ctx.currentTime + 0.4);
+      gain.gain.value = 0.5;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+      osc.onended = resolve;
+    });
+  }
+
+  function playFallingTone() {
+    return new Promise(resolve => {
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(440, ctx.currentTime + 0.4);
+      gain.gain.value = 0.5;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+      osc.onended = resolve;
+    });
+  }
+
+  function playBuzzer() {
+    return new Promise(resolve => {
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = 440;
+      gain.gain.value = 0.5;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.3);
+      osc.onended = resolve;
+    });
+  }
+
   // --- TTS + Beep parsing ---
   function parseTextSegments(text) {
     if (!text) return [];
-    // Split on whitespace, keeping groups of dots together
-    const tokens = text.trim().split(/\s+/);
+    // Split on sound tokens: asterisk groups (\*+) and individual ^, v, !
+    const parts = text.trim().split(/(\*+|[\^v!])/);
     const segments = [];
-    let wordBuffer = [];
 
-    for (const token of tokens) {
-      if (/^\.{1,3}$/.test(token)) {
-        if (wordBuffer.length > 0) {
-          segments.push({ type: 'speech', text: wordBuffer.join(' ') });
-          wordBuffer = [];
-        }
-        const dots = token.length;
-        const ms = dots === 1 ? 200 : dots === 2 ? 400 : 700;
+    for (const part of parts) {
+      if (/^\*+$/.test(part)) {
+        const stars = part.length;
+        const ms = stars === 1 ? 200 : stars === 2 ? 400 : 700;
         segments.push({ type: 'beep', duration: ms });
+      } else if (part === '^') {
+        segments.push({ type: 'rising' });
+      } else if (part === 'v') {
+        segments.push({ type: 'falling' });
+      } else if (part === '!') {
+        segments.push({ type: 'buzzer' });
       } else {
-        wordBuffer.push(token);
+        const trimmed = part.trim();
+        if (trimmed) segments.push({ type: 'speech', text: trimmed });
       }
-    }
-    if (wordBuffer.length > 0) {
-      segments.push({ type: 'speech', text: wordBuffer.join(' ') });
     }
     return segments;
   }
@@ -518,6 +569,12 @@
       if (execState.stopped) return;
       if (seg.type === 'beep') {
         await playBeep(seg.duration);
+      } else if (seg.type === 'rising') {
+        await playRisingTone();
+      } else if (seg.type === 'falling') {
+        await playFallingTone();
+      } else if (seg.type === 'buzzer') {
+        await playBuzzer();
       } else {
         await speakText(seg.text);
       }
@@ -740,6 +797,12 @@
 
   $('pause-btn').addEventListener('click', togglePause);
   $('stop-btn').addEventListener('click', stopExecution);
+
+  // --- Help Screens ---
+  $('home-help-btn').addEventListener('click', () => showScreen(homeHelpScreen));
+  $('home-help-back').addEventListener('click', () => { showScreen(homeScreen); renderHome(); });
+  $('editor-help-btn').addEventListener('click', () => showScreen(editorHelpScreen));
+  $('editor-help-back').addEventListener('click', () => showScreen(editorScreen));
 
   // --- Init ---
   renderHome();

@@ -43,9 +43,9 @@ On execution, the tree is flattened into a linear step array (respecting all rep
 - **Background execution** relies on a silent audio loop + Media Session API to keep the browser alive with the screen off. Wake Lock is intentionally *not* used — the screen should turn off to save battery.
 - **Dual timer strategy**: `setInterval` (250ms) for background reliability + `requestAnimationFrame` for smooth display. Both use `Date.now()` for drift correction.
 - **Block duration includes TTS time** — a 30s block with 5s of speech has 25s of remaining silence. TTS and countdown run concurrently.
-- **TTS beep syntax**: `.` = 200ms beep, `..` = 400ms, `...` = 700ms (880Hz sine wave via Web Audio API).
+- **TTS sound syntax**: `*` = 200ms beep, `**` = 400ms, `***` (or more) = 700ms (880Hz sine wave); `^` = rising tone (440-880Hz, 400ms); `v` = falling tone (880-440Hz, 400ms); `!` = buzzer (square wave, 300ms). All tokens work inline without surrounding spaces. Multiple `*` group into one longer beep; `^`, `v`, and `!` are always individual.
 - **Drag-and-drop** only reorders within the same parent level (no cross-level moves).
 
 ## UI
 
-Dark theme. Three screens toggled via `.active` class. Mobile-first with 48px minimum touch targets. All CSS is in `index.html`.
+Dark theme. Five screens toggled via `.active` class: home, editor, execution, home help (about), and editor help (sound tokens reference). Mobile-first with 48px minimum touch targets. All CSS is in `index.html`.
