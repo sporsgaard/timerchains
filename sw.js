@@ -1,8 +1,9 @@
-const CACHE_NAME = 'interval-runner-v2';
+const CACHE_NAME = 'interval-runner-v3';
 const ASSETS = [
   './',
   './index.html',
   './app.js',
+  './js-yaml.min.js',
   './manifest.json',
   './icons/icon-48x48.png',
   './icons/icon-72x72.png',
