@@ -22,12 +22,15 @@ When changing files, bump `CACHE_NAME` in `sw.js` so returning users get fresh a
 
 ## Architecture
 
-Single-page app in four files — all logic lives in one IIFE in `app.js`:
+Single-page app — all logic lives in one IIFE in `app.js`:
 
-- **`index.html`** — app shell with all CSS inlined in `<style>`, three screen `<div>`s (home, editor, execution), and an inline base64 silent WAV `<audio>` element for background execution.
-- **`app.js`** — all application logic: screen navigation, workout CRUD (localStorage), recursive block tree editor with drag-and-drop, TTS/beep text parser, and the timer executor.
+- **`index.html`** — app shell with all CSS inlined in `<style>`, five screen `<div>`s (home, editor, execution, home help, editor help), and an inline base64 silent WAV `<audio>` element for background execution.
+- **`app.js`** — all application logic: screen navigation, workout CRUD (localStorage), template fetch/cache, recursive block tree editor with drag-and-drop, TTS/sound token parser, and the timer executor.
 - **`sw.js`** — service worker with cache-first strategy. Assets list is hardcoded.
 - **`manifest.json`** — PWA manifest.
+- **`samjs.min.js`** — vendored SAM speech synthesis (renders to Web Audio API buffers).
+- **`js-yaml.min.js`** — vendored YAML parser for workout templates.
+- **`templates/`** — YAML workout templates with `index.json` manifest.
 
 ## Data Model
 
