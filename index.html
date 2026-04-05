@@ -160,8 +160,36 @@
     .editor-readonly .name-input { opacity: 0.7; }
     .editor-readonly .drag-handle { display: none; }
     .editor-readonly .block-actions { display: none; }
+    .editor-readonly .block-actions-readonly { display: flex; }
     .editor-readonly .add-leaf-root,
     .editor-readonly .add-group-root { display: none; }
+
+    /* Preview button (visible in read-only via block-actions-readonly) */
+    .block-actions-readonly {
+      display: none;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .block-actions-readonly button {
+      background: var(--bg);
+      color: var(--text2);
+      padding: 6px 10px;
+      font-size: 13px;
+      min-height: 36px;
+    }
+    .block-actions-readonly button:active { color: var(--text); }
+
+    /* Group letter input */
+    .group-letter-input {
+      width: 36px;
+      min-width: 36px;
+      min-height: 32px;
+      padding: 4px 6px;
+      text-align: center;
+      font-size: 14px;
+      text-transform: lowercase;
+      border-radius: 6px;
+    }
 
     .empty-state {
       text-align: center;
@@ -482,6 +510,25 @@
     <p>Example: <code>Ready*set***go</code> &rarr; speaks "Ready" &rarr; short beep &rarr; speaks "set" &rarr; long beep &rarr; speaks "go"</p>
     <p>Example: <code>Sprint!</code> &rarr; speaks "Sprint" &rarr; buzzer</p>
     <p>Example: <code>^^Run</code> &rarr; two rising tones &rarr; speaks "Run"</p>
+
+    <h2>Loop Variables</h2>
+    <p>Groups can be assigned a single-letter variable (a&ndash;z) using the <strong>Var</strong> input next to the repeat count. This letter can then be referenced in leaf text to show the current iteration number.</p>
+    <table>
+      <thead>
+        <tr><th>Syntax</th><th>Meaning</th><th>Example (5 reps)</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>{a}</code></td><td>Current iteration (count up)</td><td>1, 2, 3, 4, 5</td></tr>
+        <tr><td><code>{#a}</code></td><td>Total iterations</td><td>5, 5, 5, 5, 5</td></tr>
+        <tr><td><code>{%a}</code></td><td>Countdown</td><td>5, 4, 3, 2, 1</td></tr>
+        <tr><td><code>{~a}</code></td><td>Remaining after current</td><td>4, 3, 2, 1, (empty)</td></tr>
+      </tbody>
+    </table>
+    <p>Example: A group with letter <code>r</code> and repeat 5, containing a leaf with text <code>Round {r} of {#r}***go</code> &rarr; speaks "Round 1 of 5" &rarr; long beep &rarr; speaks "go" on first iteration.</p>
+    <p>Variables from outer groups are available in inner blocks. If a letter is not defined in any ancestor group, it is left as-is.</p>
+
+    <h2>Sound Preview</h2>
+    <p>Each block in the editor has a <strong>&#9834;</strong> button that lets you preview how the text sounds. Variables are substituted assuming iteration 1 for all groups.</p>
   </div>
 </div>
 

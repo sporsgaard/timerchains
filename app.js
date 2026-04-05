@@ -269,19 +269,37 @@
             <label>&times;<input type="number" min="1" max="99" value="${block.repeat}" data-field="repeat" style="width:70px;margin-left:2px"></label>
           </div>
           <div class="block-actions">
+            <button class="preview-btn" title="Preview sound">&#9834;</button>
             <button class="del-btn">Delete</button>
+          </div>
+          <div class="block-actions-readonly">
+            <button class="preview-btn" title="Preview sound">&#9834;</button>
           </div>
         </div>`;
 
         li.querySelector('[data-field="text"]').addEventListener('input', e => { block.text = e.target.value; });
         li.querySelector('[data-field="duration"]').addEventListener('input', e => { block.duration = Math.max(1, parseInt(e.target.value) || 1); });
         li.querySelector('[data-field="repeat"]').addEventListener('input', e => { block.repeat = Math.min(99, Math.max(1, parseInt(e.target.value) || 1)); });
+
+        // Preview button(s)
+        li.querySelectorAll('.preview-btn').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var text = block.text || '';
+            // Build context from ancestor groups
+            var ctx = buildPreviewContext(li);
+            text = substituteVars(text, ctx);
+            var segments = parseTextSegments(text);
+            if (segments.length > 0) playSegmentsPreview(segments);
+          });
+        });
       } else {
         li.innerHTML = `<div class="block-card group-card">
           <div class="group-header">
             <span class="drag-handle">⠿</span>
             <span class="group-label">${esc(block.name || 'Group')}</span>
             <label style="font-weight:normal">&times;<input type="number" min="1" max="99" value="${block.repeat}" data-field="repeat" style="width:70px;margin-left:2px"></label>
+            <label style="font-weight:normal;font-size:13px;color:var(--text2)">Var:<input type="text" maxlength="1" value="${esc(block.letter || '')}" data-field="letter" class="group-letter-input"></label>
           </div>
           <ul class="block-tree inner-tree"></ul>
           <div class="block-actions">
@@ -312,6 +330,11 @@
           input.addEventListener('keydown', e => { if (e.key === 'Enter') input.blur(); });
         });
         card.querySelector('[data-field="repeat"]').addEventListener('input', e => { block.repeat = Math.min(99, Math.max(1, parseInt(e.target.value) || 1)); });
+        card.querySelector('[data-field="letter"]').addEventListener('input', e => {
+          var val = e.target.value.toLowerCase().replace(/[^a-z]/g, '');
+          e.target.value = val;
+          block.letter = val || undefined;
+        });
         const innerTree = card.querySelector('.inner-tree');
         renderBlocks(block.blocks, innerTree, block);
 
@@ -394,9 +417,54 @@
     });
   }
 
+  // --- Save validation ---
+  function collectDefinedLetters(block) {
+    var letters = new Set();
+    if (block.type === 'group') {
+      if (block.letter) letters.add(block.letter);
+      (block.blocks || []).forEach(function (child) {
+        collectDefinedLetters(child).forEach(function (l) { letters.add(l); });
+      });
+    }
+    return letters;
+  }
+
+  function collectReferencedLetters(block) {
+    var letters = new Set();
+    if (block.type === 'leaf') {
+      var m;
+      var re = /\{[#%~]?([a-z])\}/g;
+      while ((m = re.exec(block.text || '')) !== null) {
+        letters.add(m[1]);
+      }
+    } else if (block.type === 'group') {
+      (block.blocks || []).forEach(function (child) {
+        collectReferencedLetters(child).forEach(function (l) { letters.add(l); });
+      });
+    }
+    return letters;
+  }
+
+  function validateVarReferences(rootBlock) {
+    var defined = collectDefinedLetters(rootBlock);
+    var referenced = collectReferencedLetters(rootBlock);
+    var undefined_ = [];
+    referenced.forEach(function (l) {
+      if (!defined.has(l)) undefined_.push(l);
+    });
+    return undefined_;
+  }
+
   // --- Save ---
   $('save-btn').addEventListener('click', () => {
     const name = workoutNameEl.value.trim() || 'Untitled';
+
+    // Validate variable references
+    var undefinedVars = validateVarReferences(editorBlocks);
+    if (undefinedVars.length > 0) {
+      alert('Warning: Variable(s) {' + undefinedVars.join('}, {') + '} referenced in text but no ancestor group defines them.');
+    }
+
     if (currentWorkout) {
       currentWorkout.name = name;
       currentWorkout.blocks = JSON.parse(JSON.stringify(editorBlocks));
@@ -423,17 +491,82 @@
     renderHome();
   });
 
+  // --- Preview helpers ---
+  function buildPreviewContext(leafLi) {
+    // Walk up the DOM to find ancestor group cards and collect their letters
+    var ctx = {};
+    var el = leafLi.parentElement;
+    while (el) {
+      if (el.classList && el.classList.contains('block-card') && el.classList.contains('group-card')) {
+        var letterInput = el.querySelector(':scope > .group-header > label > [data-field="letter"]');
+        var repeatInput = el.querySelector(':scope > .group-header > label > [data-field="repeat"]');
+        if (letterInput && letterInput.value) {
+          var letter = letterInput.value.toLowerCase();
+          var total = parseInt(repeatInput ? repeatInput.value : 1) || 1;
+          // Only set if not already set by a closer ancestor (inner shadows outer)
+          if (!ctx[letter]) {
+            ctx[letter] = { current: 1, total: total };
+          }
+        }
+      }
+      el = el.parentElement;
+    }
+    return ctx;
+  }
+
+  // Separate playSegments for preview that doesn't check execState.stopped
+  async function playSegmentsPreview(segments) {
+    for (var i = 0; i < segments.length; i++) {
+      var seg = segments[i];
+      if (seg.type === 'beep') {
+        await playBeep(seg.duration);
+      } else if (seg.type === 'rising') {
+        await playRisingTone();
+      } else if (seg.type === 'falling') {
+        await playFallingTone();
+      } else if (seg.type === 'buzzer') {
+        await playBuzzer();
+      } else {
+        await speakText(seg.text);
+      }
+    }
+  }
+
+  // --- Variable substitution ---
+  function substituteVars(text, context) {
+    return text.replace(/\{([#%~]?)([a-z])\}/g, function (match, modifier, letter) {
+      var info = context[letter];
+      if (!info) return match;
+      switch (modifier) {
+        case '': return info.current;
+        case '#': return info.total;
+        case '%': return info.total - info.current + 1;
+        case '~': {
+          var remaining = info.total - info.current;
+          return remaining > 0 ? remaining : '';
+        }
+      }
+      return match;
+    });
+  }
+
   // --- Flatten blocks for execution ---
-  function flattenBlocks(block) {
-    const steps = [];
+  function flattenBlocks(block, context) {
+    var ctx = context || {};
+    var steps = [];
     if (block.type === 'leaf') {
-      for (let r = 0; r < (block.repeat || 1); r++) {
-        steps.push({ text: block.text || '', duration: block.duration || 1 });
+      for (var r = 0; r < (block.repeat || 1); r++) {
+        steps.push({ text: substituteVars(block.text || '', ctx), duration: block.duration || 1 });
       }
     } else if (block.type === 'group') {
-      for (let r = 0; r < (block.repeat || 1); r++) {
-        for (const child of (block.blocks || [])) {
-          steps.push(...flattenBlocks(child));
+      var total = block.repeat || 1;
+      for (var r = 0; r < total; r++) {
+        var innerCtx = Object.assign({}, ctx);
+        if (block.letter) {
+          innerCtx[block.letter] = { current: r + 1, total: total };
+        }
+        for (var ci = 0; ci < (block.blocks || []).length; ci++) {
+          steps.push.apply(steps, flattenBlocks(block.blocks[ci], innerCtx));
         }
       }
     }
