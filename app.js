@@ -490,14 +490,26 @@
     return segments;
   }
 
+  // --- SAM TTS (plays through Web Audio API for background support) ---
+  const sam = new SamJs({ speed: 75, pitch: 64, mouth: 128, throat: 128 });
+
   function speakText(text) {
     return new Promise(resolve => {
       if (!text) { resolve(); return; }
-      const u = new SpeechSynthesisUtterance(text);
-      u.rate = 1.1;
-      u.onend = resolve;
-      u.onerror = resolve;
-      speechSynthesis.speak(u);
+      try {
+        const samples = sam.buf32(text);
+        if (!samples || samples.length === 0) { resolve(); return; }
+        const ctx = getAudioCtx();
+        const buffer = ctx.createBuffer(1, samples.length, 22050);
+        buffer.getChannelData(0).set(samples);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(ctx.destination);
+        source.onended = resolve;
+        source.start();
+      } catch (e) {
+        resolve();
+      }
     });
   }
 
@@ -631,7 +643,7 @@
     // Wait for duration
     await waitForStepEnd(step.duration);
     await segPromise.catch(() => {}); // ensure segments finish or fail gracefully
-    speechSynthesis.cancel(); // cut off any lingering speech
+    // SAM plays through Web Audio — no global cancel needed // cut off any lingering speech
 
     if (execState.stopped) return;
 
@@ -680,13 +692,13 @@
       execState.pausedElapsed += Date.now() - execState.pauseStart;
       execState.paused = false;
       $('pause-btn').textContent = 'Pause';
-      speechSynthesis.resume();
+      // SAM audio resumes via AudioContext
     } else {
       // Pause
       execState.paused = true;
       execState.pauseStart = Date.now();
       $('pause-btn').textContent = 'Resume';
-      speechSynthesis.pause();
+      // SAM audio pauses via AudioContext
     }
   }
 
@@ -695,7 +707,7 @@
     execState.running = false;
     if (execState.intervalId) clearInterval(execState.intervalId);
     if (execState.rafId) cancelAnimationFrame(execState.rafId);
-    speechSynthesis.cancel();
+    // SAM plays through Web Audio — no global cancel needed
     silentAudio.pause();
     silentAudio.currentTime = 0;
     showScreen(editorScreen);

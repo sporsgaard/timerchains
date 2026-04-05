@@ -1,9 +1,10 @@
-const CACHE_NAME = 'interval-runner-v4';
+const CACHE_NAME = 'interval-runner-v5';
 const ASSETS = [
   './',
   './index.html',
   './app.js',
   './js-yaml.min.js',
+  './samjs.min.js',
   './manifest.json',
   './icons/icon-48x48.png',
   './icons/icon-72x72.png',

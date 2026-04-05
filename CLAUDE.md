@@ -1,0 +1,51 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+Interval Runner is a browser-based PWA for composing and executing timed interval running workouts with text-to-speech announcements. The user designs a workout, presses "Run", pockets the phone, and listens through earphones while running.
+
+## Development
+
+No build step, no dependencies, no package manager. Serve with any static HTTP server:
+
+```bash
+python3 -m http.server 8000
+# or
+npx serve .
+```
+
+No tests or linting configured.
+
+When changing files, bump `CACHE_NAME` in `sw.js` so returning users get fresh assets.
+
+## Architecture
+
+Single-page app in four files — all logic lives in one IIFE in `app.js`:
+
+- **`index.html`** — app shell with all CSS inlined in `<style>`, three screen `<div>`s (home, editor, execution), and an inline base64 silent WAV `<audio>` element for background execution.
+- **`app.js`** — all application logic: screen navigation, workout CRUD (localStorage), recursive block tree editor with drag-and-drop, TTS/beep text parser, and the timer executor.
+- **`sw.js`** — service worker with cache-first strategy. Assets list is hardcoded.
+- **`manifest.json`** — PWA manifest.
+
+## Data Model
+
+Workouts are stored in `localStorage` under key `"workouts"` as a JSON array. Each workout contains a recursive block tree:
+
+- **Leaf block**: `{ type: "leaf", text, duration, repeat }` — a timed segment with optional TTS text
+- **Group block**: `{ type: "group", name, blocks: [...], repeat }` — a container that repeats its children
+
+On execution, the tree is flattened into a linear step array (respecting all repeats).
+
+## Key Design Decisions
+
+- **Background execution** relies on a silent audio loop + Media Session API to keep the browser alive with the screen off. Wake Lock is intentionally *not* used — the screen should turn off to save battery.
+- **Dual timer strategy**: `setInterval` (250ms) for background reliability + `requestAnimationFrame` for smooth display. Both use `Date.now()` for drift correction.
+- **Block duration includes TTS time** — a 30s block with 5s of speech has 25s of remaining silence. TTS and countdown run concurrently.
+- **TTS beep syntax**: `.` = 200ms beep, `..` = 400ms, `...` = 700ms (880Hz sine wave via Web Audio API).
+- **Drag-and-drop** only reorders within the same parent level (no cross-level moves).
+
+## UI
+
+Dark theme. Three screens toggled via `.active` class. Mobile-first with 48px minimum touch targets. All CSS is in `index.html`.
