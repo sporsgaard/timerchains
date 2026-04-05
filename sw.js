@@ -1,4 +1,4 @@
-const CACHE_NAME = 'interval-runner-v2';
+const CACHE_NAME = 'interval-runner-v3';
 const ASSETS = [
   './',
   './index.html',
