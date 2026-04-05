@@ -71,6 +71,40 @@
     }
   }
 
+  // --- Unique Name Generation ---
+  function generateCopyName(originalName) {
+    const baseName = originalName || 'Untitled';
+    const existingNames = new Set(workouts.map(w => w.name));
+    const candidate = baseName + ' (copy)';
+    if (!existingNames.has(candidate)) return candidate;
+    for (let i = 2; ; i++) {
+      const numbered = baseName + ' (copy ' + i + ')';
+      if (!existingNames.has(numbered)) return numbered;
+    }
+  }
+
+  // --- Copy Workout ---
+  let copyInProgress = false;
+
+  function copyWorkout(name, blocks) {
+    if (copyInProgress) return null;
+    copyInProgress = true;
+    try {
+      loadWorkouts();
+      const newName = generateCopyName(name);
+      const newWorkout = {
+        id: Date.now(),
+        name: newName,
+        blocks: JSON.parse(JSON.stringify(blocks))
+      };
+      workouts.push(newWorkout);
+      saveWorkouts();
+      return newWorkout;
+    } finally {
+      copyInProgress = false;
+    }
+  }
+
   function renderTemplateList() {
     const listEl = $('template-list');
     listEl.innerHTML = '';
@@ -81,8 +115,14 @@
     templates.forEach(t => {
       const item = document.createElement('div');
       item.className = 'template-item';
-      item.innerHTML = '<span class="name">' + esc(t.name) + '</span>';
-      item.addEventListener('click', () => openTemplateEditor(t));
+      item.innerHTML = '<span class="name">' + esc(t.name) + '</span>'
+        + '<button class="copy-btn" title="Copy to my workouts">&#x29C9;</button>';
+      item.querySelector('.name').addEventListener('click', () => openTemplateEditor(t));
+      item.querySelector('.copy-btn').addEventListener('click', e => {
+        e.stopPropagation();
+        const newWorkout = copyWorkout(t.name, t.blocks);
+        if (newWorkout) openEditor(newWorkout);
+      });
       listEl.appendChild(item);
     });
   }
@@ -115,8 +155,14 @@
         const item = document.createElement('div');
         item.className = 'workout-item';
         item.innerHTML = `<span class="name">${esc(w.name || 'Untitled')}</span>
+          <button class="copy-btn" title="Copy">&#x29C9;</button>
           <button class="delete-btn" data-id="${w.id}" title="Delete">&times;</button>`;
         item.querySelector('.name').addEventListener('click', () => openEditor(w));
+        item.querySelector('.copy-btn').addEventListener('click', e => {
+          e.stopPropagation();
+          const newWorkout = copyWorkout(w.name || 'Untitled', w.blocks);
+          if (newWorkout) openEditor(newWorkout);
+        });
         item.querySelector('.delete-btn').addEventListener('click', e => {
           e.stopPropagation();
           if (confirm('Delete "' + (w.name || 'Untitled') + '"?')) {
@@ -356,6 +402,15 @@
     saveWorkouts();
     showScreen(homeScreen);
     renderHome();
+  });
+
+  $('copy-btn').addEventListener('click', () => {
+    const name = workoutNameEl.value.trim() || 'Untitled';
+    const newWorkout = copyWorkout(name, editorBlocks);
+    if (newWorkout) {
+      renderHome();
+      openEditor(newWorkout);
+    }
   });
 
   $('editor-back').addEventListener('click', () => {
