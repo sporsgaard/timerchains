@@ -31,6 +31,11 @@ Single-page app — all logic lives in one IIFE in `app.js`:
 - **`samjs.min.js`** — vendored SAM speech synthesis (renders to Web Audio API buffers).
 - **`js-yaml.min.js`** — vendored YAML parser for workout templates.
 - **`templates/`** — YAML workout templates with `index.json` manifest.
+- **`piper/`** — self-hosted Piper neural TTS (loaded on demand, not precached by service worker):
+  - `piper-tts.js` — ES module wrapper exposing `window.PiperTTS`
+  - `piper-DeOu3H9E.js` + `piper_phonemize.{wasm,data}` — eSpeak phonemizer (~19MB)
+  - `ort.min.mjs` + `ort-wasm-simd*.wasm` — ONNX Runtime Web (~11MB)
+  - `voices/*.onnx` + `*.onnx.json` — voice models (~60MB each, MIT-licensed hfc_female/hfc_male)
 
 ## Data Model
 
@@ -47,6 +52,7 @@ On execution, the tree is flattened into a linear step array (respecting all rep
 - **Dual timer strategy**: `setInterval` (250ms) for background reliability + `requestAnimationFrame` for smooth display. Both use `Date.now()` for drift correction.
 - **Block duration includes TTS time** — a 30s block with 5s of speech has 25s of remaining silence. TTS and countdown run concurrently.
 - **TTS sound syntax**: `*` = 200ms beep, `**` = 400ms, `***` (or more) = 700ms (880Hz sine wave); `^` = rising tone (440-880Hz, 400ms); `v` = falling tone (880-440Hz, 400ms); `!` = buzzer (square wave, 300ms). All tokens work inline without surrounding spaces. Multiple `*` group into one longer beep; `^`, `v`, and `!` are always individual.
+- **Dual TTS engines**: SAM (instant, robotic, 21KB) as default; Piper neural TTS (natural, ~90MB total) loaded on demand via dynamic `import()`. Both render audio through Web Audio API for background playback. User selects voice on home screen; setting persisted in localStorage. Piper falls back to SAM on error.
 - **Drag-and-drop** only reorders within the same parent level (no cross-level moves).
 
 ## UI

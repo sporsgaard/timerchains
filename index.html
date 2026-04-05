@@ -346,6 +346,30 @@
       color: var(--accent2);
     }
 
+    /* Voice selector */
+    .voice-section {
+      padding: 16px;
+      border-top: 1px solid var(--surface2);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .voice-section label {
+      color: var(--text2);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .voice-section select {
+      flex: 1;
+      min-width: 150px;
+    }
+    .voice-status {
+      font-size: 13px;
+      color: var(--accent2);
+      width: 100%;
+    }
+
     /* Help button */
     .help-btn {
       background: none;
@@ -422,6 +446,15 @@
     </div>
     <div id="template-list"></div>
   </div>
+  <div class="voice-section">
+    <label for="voice-select">Voice:</label>
+    <select id="voice-select">
+      <option value="sam">SAM (robotic, instant)</option>
+      <option value="en_US-hfc_female-medium">HD Female (~60 MB download)</option>
+      <option value="en_US-hfc_male-medium">HD Male (~60 MB download)</option>
+    </select>
+    <span id="voice-status" class="voice-status"></span>
+  </div>
 </div>
 
 <!-- Editor Screen -->
@@ -475,6 +508,8 @@
     <p class="credit">Created by Stig Porsgaard</p>
     <p class="credit">Libraries used:</p>
     <p class="credit"><strong>SAM</strong> (Software Automatic Mouth) &mdash; JavaScript speech synthesis</p>
+    <p class="credit"><strong>Piper</strong> &mdash; Neural text-to-speech (MIT, by Michael Hansen / rhasspy)</p>
+    <p class="credit"><strong>ONNX Runtime Web</strong> &mdash; Machine learning inference (MIT, by Microsoft)</p>
     <p class="credit"><strong>js-yaml</strong> &mdash; YAML parser for workout templates</p>
   </div>
 </div>
@@ -529,6 +564,11 @@
 
     <h2>Sound Preview</h2>
     <p>Each block in the editor has a <strong>&#9834;</strong> button that lets you preview how the text sounds. Variables are substituted assuming iteration 1 for all groups.</p>
+
+    <h2>Voice Engine</h2>
+    <p>Choose your voice on the home screen:</p>
+    <p><strong>SAM</strong> &mdash; Instant, robotic voice. No download needed. Works offline immediately.</p>
+    <p><strong>HD Female / HD Male</strong> &mdash; Natural-sounding neural voice powered by Piper. Requires a one-time ~60 MB download per voice. Once loaded, works offline.</p>
   </div>
 </div>
 

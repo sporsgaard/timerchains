@@ -29,6 +29,12 @@
   let editorReadOnly = false; // True when viewing a template
   let templates = [];        // Cached templates: Array of { name, blocks }
 
+  // --- Voice engine setting ---
+  // 'sam', 'en_US-hfc_female-medium', 'en_US-hfc_male-medium'
+  let voiceEngine = localStorage.getItem('voiceEngine') || 'sam';
+  let piperLoading = false;
+  let piperReady = false;
+
   // --- Storage ---
   function loadWorkouts() {
     try {
@@ -677,7 +683,7 @@
   // --- SAM TTS (plays through Web Audio API for background support) ---
   const sam = new SamJs({ speed: 75, pitch: 64, mouth: 128, throat: 128 });
 
-  function speakText(text) {
+  function speakSam(text) {
     return new Promise(resolve => {
       if (!text) { resolve(); return; }
       try {
@@ -695,6 +701,63 @@
         resolve();
       }
     });
+  }
+
+  // --- Piper TTS (HD voice, played through Web Audio API) ---
+  async function speakPiper(text) {
+    if (!text) return;
+    try {
+      if (!window.PiperTTS || !window.PiperTTS.ready) {
+        // Fallback to SAM if Piper not loaded
+        return speakSam(text);
+      }
+      const wavBuffer = await window.PiperTTS.speak(text, voiceEngine);
+      const ctx = getAudioCtx();
+      const audioBuffer = await ctx.decodeAudioData(wavBuffer);
+      return new Promise(resolve => {
+        const source = ctx.createBufferSource();
+        source.buffer = audioBuffer;
+        source.connect(ctx.destination);
+        source.onended = resolve;
+        source.start();
+      });
+    } catch (e) {
+      console.error('Piper TTS error, falling back to SAM:', e);
+      return speakSam(text);
+    }
+  }
+
+  function speakText(text) {
+    if (voiceEngine === 'sam') return speakSam(text);
+    return speakPiper(text);
+  }
+
+  // --- Piper lazy loading ---
+  async function loadPiperEngine(voiceId) {
+    if (piperLoading) return;
+    piperLoading = true;
+    updateVoiceStatus('Loading HD voice...');
+    try {
+      // Dynamically load the Piper module
+      await import('./piper/piper-tts.js');
+      updateVoiceStatus('Initializing...');
+      await window.PiperTTS.init(voiceId);
+      piperReady = true;
+      updateVoiceStatus('Ready');
+    } catch (e) {
+      console.error('Failed to load Piper:', e);
+      updateVoiceStatus('Failed to load');
+      // Revert to SAM
+      voiceEngine = 'sam';
+      localStorage.setItem('voiceEngine', 'sam');
+      if ($('voice-select')) $('voice-select').value = 'sam';
+    }
+    piperLoading = false;
+  }
+
+  function updateVoiceStatus(msg) {
+    const el = $('voice-status');
+    if (el) el.textContent = msg;
   }
 
   async function playSegments(segments) {
@@ -937,6 +1000,21 @@
   $('editor-help-btn').addEventListener('click', () => showScreen(editorHelpScreen));
   $('editor-help-back').addEventListener('click', () => showScreen(editorScreen));
 
+  // --- Voice Settings ---
+  $('voice-select').value = voiceEngine;
+  $('voice-select').addEventListener('change', function () {
+    voiceEngine = this.value;
+    localStorage.setItem('voiceEngine', voiceEngine);
+    if (voiceEngine !== 'sam' && (!window.PiperTTS || !window.PiperTTS.ready || !piperReady)) {
+      loadPiperEngine(voiceEngine);
+    } else if (voiceEngine !== 'sam') {
+      window.PiperTTS.switchVoice(voiceEngine);
+      updateVoiceStatus('Ready');
+    } else {
+      updateVoiceStatus('');
+    }
+  });
+
   // --- Init ---
   renderHome();
 
@@ -946,6 +1024,11 @@
     fetchTemplates().then(() => renderTemplateList());
   } else {
     renderTemplateList();
+  }
+
+  // Auto-load Piper if a Piper voice was previously selected
+  if (voiceEngine !== 'sam') {
+    loadPiperEngine(voiceEngine);
   }
 
 })();
