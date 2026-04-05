@@ -190,6 +190,9 @@
 
       li.querySelector(':scope > .block-card > .block-actions > .del-btn').addEventListener('click', e => {
         e.stopPropagation();
+        if (block.type !== 'leaf') {
+          if (!confirm('Delete group "' + (block.name || 'Group') + '"?')) return;
+        }
         blocks.splice(idx, 1);
         renderBlockTree();
       });
