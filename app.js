@@ -24,6 +24,8 @@
   let workouts = [];       // Array of { id, name, blocks }
   let currentWorkout = null; // The workout being edited
   let editorBlocks = null;   // Root group block for editor
+  let editorReadOnly = false; // True when viewing a template
+  let templates = [];        // Cached templates: Array of { name, blocks }
 
   // --- Storage ---
   function loadWorkouts() {
@@ -35,6 +37,65 @@
   function saveWorkouts() {
     localStorage.setItem('workouts', JSON.stringify(workouts));
   }
+
+  // --- Templates ---
+  function loadTemplatesFromCache() {
+    try {
+      templates = JSON.parse(localStorage.getItem('templates')) || [];
+    } catch { templates = []; }
+  }
+
+  function saveTemplatesToCache() {
+    localStorage.setItem('templates', JSON.stringify(templates));
+  }
+
+  async function fetchTemplates() {
+    try {
+      const indexResp = await fetch('templates/index.json');
+      if (!indexResp.ok) throw new Error('Failed to fetch template index');
+      const index = await indexResp.json();
+      const fetched = [];
+      for (const entry of index) {
+        const yamlResp = await fetch('templates/' + entry.file);
+        if (!yamlResp.ok) continue;
+        const yamlText = await yamlResp.text();
+        const parsed = jsyaml.load(yamlText);
+        if (parsed && parsed.name && parsed.blocks) {
+          fetched.push({ name: parsed.name, blocks: parsed.blocks });
+        }
+      }
+      templates = fetched;
+      saveTemplatesToCache();
+    } catch (err) {
+      console.error('Failed to fetch templates:', err);
+    }
+  }
+
+  function renderTemplateList() {
+    const listEl = $('template-list');
+    listEl.innerHTML = '';
+    if (templates.length === 0) {
+      listEl.innerHTML = '<div style="color:var(--text2);font-size:14px;padding:8px 0;">No templates available.</div>';
+      return;
+    }
+    templates.forEach(t => {
+      const item = document.createElement('div');
+      item.className = 'template-item';
+      item.innerHTML = '<span class="name">' + esc(t.name) + '</span>';
+      item.addEventListener('click', () => openTemplateEditor(t));
+      listEl.appendChild(item);
+    });
+  }
+
+  $('refresh-templates-btn').addEventListener('click', async () => {
+    const btn = $('refresh-templates-btn');
+    btn.disabled = true;
+    btn.textContent = '...';
+    await fetchTemplates();
+    renderTemplateList();
+    btn.disabled = false;
+    btn.textContent = '\u21BB';
+  });
 
   // --- Screen Navigation ---
   function showScreen(screen) {
@@ -82,7 +143,26 @@
   }
 
   // --- Editor ---
+  function setEditorMode(readOnly) {
+    editorReadOnly = readOnly;
+    const content = editorScreen.querySelector('.editor-content');
+    if (readOnly) {
+      content.classList.add('editor-readonly');
+      $('editor-title').textContent = 'Template';
+      $('save-btn').style.display = 'none';
+      $('copy-btn').style.display = '';
+      workoutNameEl.disabled = true;
+    } else {
+      content.classList.remove('editor-readonly');
+      $('editor-title').textContent = 'Edit Workout';
+      $('save-btn').style.display = '';
+      $('copy-btn').style.display = 'none';
+      workoutNameEl.disabled = false;
+    }
+  }
+
   function openEditor(workout) {
+    setEditorMode(false);
     if (workout) {
       currentWorkout = workout;
       editorBlocks = JSON.parse(JSON.stringify(workout.blocks));
@@ -91,6 +171,15 @@
       editorBlocks = { type: 'group', blocks: [], repeat: 1 };
     }
     workoutNameEl.value = currentWorkout ? currentWorkout.name : '';
+    renderBlockTree();
+    showScreen(editorScreen);
+  }
+
+  function openTemplateEditor(template) {
+    setEditorMode(true);
+    currentWorkout = null;
+    editorBlocks = JSON.parse(JSON.stringify(template.blocks));
+    workoutNameEl.value = template.name;
     renderBlockTree();
     showScreen(editorScreen);
   }
@@ -120,7 +209,7 @@
     blocks.forEach((block, idx) => {
       const li = document.createElement('li');
       li.className = 'block-item';
-      li.draggable = true;
+      li.draggable = !editorReadOnly;
       li.dataset.idx = idx;
 
       if (block.type === 'leaf') {
@@ -156,7 +245,9 @@
 
         const card = li.querySelector(':scope > .block-card');
         const groupLabel = card.querySelector('.group-label');
+        if (editorReadOnly) { groupLabel.style.cursor = 'default'; groupLabel.style.borderBottom = 'none'; }
         groupLabel.addEventListener('click', () => {
+          if (editorReadOnly) return;
           const input = document.createElement('input');
           input.type = 'text';
           input.value = block.name || '';
@@ -197,8 +288,15 @@
         renderBlockTree();
       });
 
+      // Disable all inputs in read-only mode
+      if (editorReadOnly) {
+        li.querySelectorAll('input').forEach(inp => { inp.disabled = true; });
+      }
+
       // Drag & drop
-      setupDrag(li, blocks, idx, parentUl);
+      if (!editorReadOnly) {
+        setupDrag(li, blocks, idx, parentUl);
+      }
 
       parentUl.appendChild(li);
     });
@@ -376,16 +474,18 @@
 
   $('run-btn').addEventListener('click', () => {
     const name = workoutNameEl.value.trim() || 'Untitled';
-    // Save first
-    if (currentWorkout) {
-      currentWorkout.name = name;
-      currentWorkout.blocks = JSON.parse(JSON.stringify(editorBlocks));
-    } else {
-      currentWorkout = { id: Date.now(), name, blocks: JSON.parse(JSON.stringify(editorBlocks)) };
-      workouts.push(currentWorkout);
+    if (!editorReadOnly) {
+      // Save first
+      if (currentWorkout) {
+        currentWorkout.name = name;
+        currentWorkout.blocks = JSON.parse(JSON.stringify(editorBlocks));
+      } else {
+        currentWorkout = { id: Date.now(), name, blocks: JSON.parse(JSON.stringify(editorBlocks)) };
+        workouts.push(currentWorkout);
+      }
+      saveWorkouts();
+      renderHome();
     }
-    saveWorkouts();
-    renderHome();
 
     startExecution(name, editorBlocks);
   });
@@ -576,5 +676,13 @@
 
   // --- Init ---
   renderHome();
+
+  // Load templates from cache, auto-fetch if not cached yet
+  loadTemplatesFromCache();
+  if (templates.length === 0 && !localStorage.getItem('templates')) {
+    fetchTemplates().then(() => renderTemplateList());
+  } else {
+    renderTemplateList();
+  }
 
 })();

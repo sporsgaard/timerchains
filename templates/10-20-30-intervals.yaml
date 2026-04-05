@@ -1,0 +1,43 @@
+# 10-20-30 Intervals
+# The classic Danish 10-20-30 running method by Prof. Jens Bangsbo.
+# Each interval: 30s slow jog, 20s moderate pace, 10s sprint.
+# 5 repetitions per set, 2 min rest between sets, 4 sets total.
+# Includes warm-up and cool-down.
+
+name: "10-20-30 Intervals"
+blocks:
+  type: group
+  repeat: 1
+  blocks:
+    - type: leaf
+      text: "Warm up ... easy jog"
+      duration: 300
+      repeat: 1
+    - type: group
+      name: "Main workout"
+      repeat: 4
+      blocks:
+        - type: group
+          name: "10-20-30 set"
+          repeat: 5
+          blocks:
+            - type: leaf
+              text: "Slow jog"
+              duration: 30
+              repeat: 1
+            - type: leaf
+              text: "Moderate pace"
+              duration: 20
+              repeat: 1
+            - type: leaf
+              text: "Sprint!"
+              duration: 10
+              repeat: 1
+        - type: leaf
+          text: "Rest ... walk or light jog"
+          duration: 120
+          repeat: 1
+    - type: leaf
+      text: "Cool down ... easy jog"
+      duration: 300
+      repeat: 1

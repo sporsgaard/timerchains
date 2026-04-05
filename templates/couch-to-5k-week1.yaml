@@ -1,0 +1,30 @@
+# Couch to 5K - Week 1
+# Beginner walk/run intervals.
+# Alternating 60s run / 90s walk, repeated 8 times.
+# Includes 5 min warm-up walk and 5 min cool-down walk.
+
+name: "Couch to 5K Week 1"
+blocks:
+  type: group
+  repeat: 1
+  blocks:
+    - type: leaf
+      text: "Warm up ... brisk walk"
+      duration: 300
+      repeat: 1
+    - type: group
+      name: "Run/walk intervals"
+      repeat: 8
+      blocks:
+        - type: leaf
+          text: "Run!"
+          duration: 60
+          repeat: 1
+        - type: leaf
+          text: "Walk"
+          duration: 90
+          repeat: 1
+    - type: leaf
+      text: "Cool down ... easy walk"
+      duration: 300
+      repeat: 1
