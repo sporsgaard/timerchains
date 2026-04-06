@@ -53,7 +53,7 @@ function encodeWav(samples, sampleRate) {
 async function loadOrt() {
   if (ort) return ort;
   // import() resolves relative to this module's URL
-  ort = await import(`${MODULE_BASE}ort.min.mjs`);
+  ort = await import(`${MODULE_BASE}ort.min.js`);
   ort.env.allowLocalModels = false;
   ort.env.wasm.numThreads = navigator.hardwareConcurrency;
   // wasmPaths used by ONNX Runtime to find .wasm files — relative to page
