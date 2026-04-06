@@ -1,8 +1,8 @@
-# Interval Runner
+# Stigs Timed Trainer
 
 A browser-based, offline-capable PWA for composing and executing timed interval running workouts with audio cues. Design a workout, press "Run", pocket your phone, and listen through earphones while running.
 
-![Interval Runner](timerchains_1.svg)
+![Stigs Timed Trainer](timerchains_1.svg)
 
 ## Features
 

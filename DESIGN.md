@@ -1,4 +1,4 @@
-# Interval Runner — Design & Specification
+# Stigs Timed Trainer — Design & Specification
 
 ## Overview
 

@@ -1,5 +1,5 @@
 // =============================================================
-// Piper TTS — self-hosted wrapper for Interval Runner
+// Piper TTS — self-hosted wrapper for Stigs Timed Trainer
 // Loads phonemizer WASM + ONNX Runtime + voice model from piper/
 // Exposes window.PiperTTS = { init, speak, ready }
 // =============================================================

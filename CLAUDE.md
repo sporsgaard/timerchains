@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Interval Runner is a browser-based PWA for composing and executing timed interval running workouts with text-to-speech announcements. The user designs a workout, presses "Run", pockets the phone, and listens through earphones while running.
+Stigs Timed Trainer is a browser-based PWA for composing and executing timed interval running workouts with text-to-speech announcements. The user designs a workout, presses "Run", pockets the phone, and listens through earphones while running.
 
 ## Development
 

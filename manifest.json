@@ -1,6 +1,6 @@
 {
-  "name": "Interval Runner",
-  "short_name": "Intervals",
+  "name": "Stigs Timed Trainer",
+  "short_name": "STT",
   "description": "Timed interval running workouts with text-to-speech",
   "start_url": "./index.html",
   "display": "standalone",

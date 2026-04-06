@@ -1,5 +1,5 @@
 // ============================================================
-// Interval Runner — app.js
+// Stigs Timed Trainer — app.js
 // ============================================================
 
 (function () {
@@ -825,7 +825,7 @@
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: name,
-        artist: 'Interval Runner'
+        artist: 'Stigs Timed Trainer'
       });
       navigator.mediaSession.setActionHandler('pause', () => togglePause());
       navigator.mediaSession.setActionHandler('play', () => togglePause());
@@ -868,7 +868,7 @@
     if ('mediaSession' in navigator && navigator.mediaSession.metadata) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: step.text || `Step ${idx + 1}`,
-        artist: `${idx + 1}/${total} — Interval Runner`
+        artist: `${idx + 1}/${total} — Stigs Timed Trainer`
       });
     }
 
