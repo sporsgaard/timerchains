@@ -1,4 +1,5 @@
 [
+  { "file": "showcase.yaml", "name": "2 Min Showcase" },
   { "file": "10-20-30-intervals.yaml", "name": "10-20-30 Intervals" },
   { "file": "couch-to-5k-week1.yaml", "name": "Couch to 5K Week 1" }
 ]

@@ -1,0 +1,56 @@
+# Showcase — 2 minute demo
+# Demonstrates all sound tokens, variables, and nested groups.
+# Total: ~2 minutes. Great for testing your setup.
+# Variables: r = round, s = step within round
+
+name: "2 Min Showcase"
+blocks:
+  type: group
+  repeat: 1
+  blocks:
+    - type: leaf
+      text: "^Welcome to the showcase"
+      duration: 5
+      repeat: 1
+    - type: group
+      name: "Rounds"
+      letter: r
+      repeat: 3
+      blocks:
+        - type: leaf
+          text: "**Round {r} of {#r}"
+          duration: 3
+          repeat: 1
+        - type: group
+          name: "Steps"
+          letter: s
+          repeat: 4
+          blocks:
+            - type: leaf
+              text: "*Step {s}*"
+              duration: 8
+              repeat: 1
+        - type: leaf
+          text: "v{~r} rounds remaining"
+          duration: 5
+          repeat: 1
+    - type: leaf
+      text: "***Beep!**Medium beep!*Short beep!"
+      duration: 8
+      repeat: 1
+    - type: leaf
+      text: "^Rising tone"
+      duration: 5
+      repeat: 1
+    - type: leaf
+      text: "vFalling tone"
+      duration: 5
+      repeat: 1
+    - type: leaf
+      text: "!Buzzer alert"
+      duration: 5
+      repeat: 1
+    - type: leaf
+      text: "***Showcase complete! Well done"
+      duration: 5
+      repeat: 1

@@ -3,6 +3,7 @@
 # Each interval: 30s slow jog, 20s moderate pace, 10s sprint.
 # 5 repetitions per set, 2 min rest between sets, 4 sets total.
 # Includes warm-up and cool-down.
+# Variables: s = set number, r = rep within set
 
 name: "10-20-30 Intervals"
 blocks:
@@ -15,10 +16,16 @@ blocks:
       repeat: 1
     - type: group
       name: "Main workout"
+      letter: s
       repeat: 4
       blocks:
+        - type: leaf
+          text: "^Set {s} of {#s}"
+          duration: 3
+          repeat: 1
         - type: group
           name: "10-20-30 set"
+          letter: r
           repeat: 5
           blocks:
             - type: leaf

@@ -2,6 +2,7 @@
 # Beginner walk/run intervals.
 # Alternating 60s run / 90s walk, repeated 8 times.
 # Includes 5 min warm-up walk and 5 min cool-down walk.
+# Variable: i = interval number
 
 name: "Couch to 5K Week 1"
 blocks:
@@ -14,14 +15,15 @@ blocks:
       repeat: 1
     - type: group
       name: "Run/walk intervals"
+      letter: i
       repeat: 8
       blocks:
         - type: leaf
-          text: "Run!"
+          text: "^Interval {i} of {#i}** Run!"
           duration: 60
           repeat: 1
         - type: leaf
-          text: "Walk"
+          text: "vWalk"
           duration: 90
           repeat: 1
     - type: leaf
