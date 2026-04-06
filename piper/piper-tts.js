@@ -55,7 +55,8 @@ async function loadOrt() {
   // import() resolves relative to this module's URL
   ort = await import(`${MODULE_BASE}ort.min.js`);
   ort.env.allowLocalModels = false;
-  ort.env.wasm.numThreads = navigator.hardwareConcurrency;
+  // Single-threaded avoids needing crossOriginIsolated headers
+  ort.env.wasm.numThreads = 1;
   // wasmPaths used by ONNX Runtime to find .wasm files — relative to page
   ort.env.wasm.wasmPaths = `${PIPER_BASE}/`;
   return ort;
